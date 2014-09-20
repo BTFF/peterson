@@ -11,8 +11,8 @@ struct peterson
 };
 
 int peterson_flag_turn_size(int n);
-void peteron_initial(struct peterson* peterson, int n, void* flag_turn);
-void peterson_lock(struct peteron* peteron, int id);
+void peterson_initial(struct peterson* peterson, int n, void* flag_turn);
+void peterson_lock(struct peterson* peterson, int id);
 void peterson_unlock(struct peterson* peterson, int id);
 
 #endif/*__peterson_h__*/
