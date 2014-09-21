@@ -3,6 +3,21 @@
 
 #include <sys/time.h>
 
+#define VALUE_MAX (1000)
+
+struct test
+{
+	int id;
+	volatile int* value;
+};
+
+struct test* prepare(int n);
+void startroutine(int id, void* (*routine)(void*), void* arg);
+void waitroutine(int id);
+void* loop(void* arg);
+void lock(int i);
+void unlock(int i);
+
 const char* elapse(struct timeval* begin, struct timeval* end);
 
 #endif/*__test_h__*/
