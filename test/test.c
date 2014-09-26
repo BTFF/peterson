@@ -9,7 +9,10 @@ void* loop(void* arg)
 		lock(test->id);
         if(*test->value < VALUE_MAX)
             ++*test->value;
+#ifdef DEBUG
 		printf("id: %d value: %d\n", test->id, *test->value);
+		fflush(stdout);
+#endif
 		unlock(test->id);
     }
 	return test;

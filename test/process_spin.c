@@ -11,28 +11,27 @@ static void* shared = NULL;
 
 static int* value = NULL;
 
-static pthread_mutex_t mutex; 
-static pthread_mutexattr_t attr;
+static volatile int* spin = NULL;
 
 static pid_t* process = NULL;
 
 struct test* prepare(int n)
 {
 	struct test* test = NULL;
+	void* p;
 	int i;
 
-	if(pthread_mutexattr_init(&attr))
+	if(!(p = mmap(NULL, sizeof(*value) + sizeof(*spin) + sizeof(*test) * n, PROT_READ|PROT_WRITE, MAP_ANON|MAP_SHARED, -1, 0)))
 		return NULL;
-	if(pthread_mutexattr_setpshared(&attr, PTHREAD_PROCESS_SHARED))
-		return NULL;
-	if(pthread_mutex_init(&mutex, &attr))
-		return NULL;
+	shared = p;
+	value = p;
+	p += sizeof(*value);
+	spin = p;
+	p += sizeof(*spin);
+	test = p;
 
-	if(!(shared = mmap(NULL, sizeof(*value) + sizeof(*test) * n, PROT_READ|PROT_WRITE, MAP_ANON|MAP_SHARED, -1, 0)))
-		return NULL;
-	value = shared;
 	*value = 0;
-	test = shared + sizeof(*value);
+	*spin = 0;
 
 	if(!(process = malloc(sizeof(*process) * n)))
 		return NULL;
@@ -66,11 +65,19 @@ void waitroutine(int id)
 
 void lock(int i)
 {
-	pthread_mutex_lock(&mutex);
+    volatile int* p = spin;
+    while(!__sync_bool_compare_and_swap(p, 0, 1))
+    {
+        //while(*p)
+            //_mm_pause();
+            //__sync_synchronize();
+    }
 }
 
 void unlock(int i)
 {
-	pthread_mutex_unlock(&mutex);
+    int volatile* p = spin;
+    asm volatile ("");
+    *p = 0;
 }
 

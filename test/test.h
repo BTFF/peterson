@@ -3,7 +3,12 @@
 
 #include <sys/time.h>
 
+//#define DEBUG
+#ifdef DEBUG
 #define VALUE_MAX (1000)
+#else
+#define VALUE_MAX (1000 * 1000)
+#endif
 
 struct test
 {

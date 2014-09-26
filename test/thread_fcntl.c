@@ -6,25 +6,18 @@
 #include <unistd.h>
 #include <sys/file.h>
 #include <sys/mman.h>
-#include <sys/types.h>
-#include <sys/ipc.h>
-#include <sys/sem.h>
 #include "test.h"
-
-/* System V semaphore */
 
 static int value[] = { 0 };
 
 static int fd = -1;
 static char template[64];
-static int semid = -1;
+static pid_t pid = -1;
 
 static pthread_t* thread = NULL;
 
 static void cleanup(void)
 {
-	if(-1 != semid)
-		semctl(semid, 0, IPC_RMID);
     if(-1 != fd)
         close(fd);
     unlink(template);
@@ -34,19 +27,12 @@ struct test* prepare(int n)
 {
 	struct test* test = NULL;
 	int i;
-	key_t key;
-	union semun arg;
 
     atexit(cleanup);
     sprintf(template, "process_flock.%d", getpid());
     if(-1 == (fd = mkstemp(template)))
         return NULL;
-	if(-1 == (key = ftok(template, 0)))
-		return NULL;
-	if(-1 == (semid = semget(key, 1, 0600|IPC_CREAT)))
-		return NULL;
-		arg.val = 1;
-	if(-1 == semctl(semid, 0, SETVAL, arg))
+	if(0 > write(fd, "0", 1))
 		return NULL;
 
 	if(!(test = malloc(sizeof(*test) * n)))
@@ -77,13 +63,27 @@ void waitroutine(int id)
 
 void lock(int i)
 {
-	struct sembuf sops = {0, -1, 0};
-	semop(semid, &sops, 1);
+	struct flock arg = 
+		{
+			.l_start = 0,
+			.l_len = 0,
+			.l_pid = pid,
+			.l_type = F_WRLCK,
+			.l_whence = SEEK_SET
+		};
+	fcntl(fd, F_SETLKW, &arg);
 }
 
 void unlock(int i)
 {
-	struct sembuf sops = {0, 1, 0};
-	semop(semid, &sops, 1);
+	struct flock arg = 
+		{
+			.l_start = 0,
+			.l_len = 0,
+			.l_pid = pid,
+			.l_type = F_UNLCK,
+			.l_whence = SEEK_SET
+		};
+	fcntl(fd, F_SETLKW, &arg);
 }
 

@@ -11,7 +11,7 @@ struct flag_turn
 
 enum { FALSE = -1, TRUE = 1 };
 
-static inline offset(int bit, int current_bit, int id)
+static inline int offset(int bit, int current_bit, int id)
 {
 	int offset;
 	int mask;
@@ -49,8 +49,7 @@ void peterson_lock(struct peterson* peterson, int id)
 		node->flag[my_turn] = TRUE;
 		node->turn = !my_turn;
 		__sync_synchronize();
-		while(TRUE == node->flag[!my_turn] && node->turn == !my_turn)
-			sched_yield();
+		while(TRUE == node->flag[!my_turn] && node->turn == !my_turn);
 	}
 }
 
@@ -67,8 +66,9 @@ void peterson_unlock(struct peterson* peterson, int id)
 		node += offset(peterson->bit, bit, id);
 		node->flag[my_turn] = FALSE;
 	}
+	__sync_synchronize();
 }
-
+/*
 int main(int argc, char** argv)
 {
 	int peterson_bit = 4;
@@ -87,4 +87,4 @@ int main(int argc, char** argv)
 	}
 	return 1;
 }
-
+*/
